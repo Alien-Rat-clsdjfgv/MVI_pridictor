@@ -319,15 +319,21 @@ if calc_button:
         <div style="background-color: white; padding: 20px; border-radius: 15px; margin-top: 10px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
         """, unsafe_allow_html=True)
         
-        # Display the gauge chart
+        # 根據參考圖片，先顯示標題，再顯示圖表，最後顯示風險級別
+        st.markdown(f"""
+        <div style="text-align: center; margin-bottom: 10px;">
+            <h1 style="font-size: 26px; font-weight: bold; margin: 0;">風險評估</h1>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # 顯示儀表盤圖表
         st.plotly_chart(create_gauge_chart(probability, risk_level), use_container_width=True)
         
-        # 根據您提供的圖片，修改顯示風險級別的樣式
+        # 顯示風險級別（使用大號字體）
         risk_level_zh = "高" if risk_level == "HIGH" else "中等" if risk_level == "MODERATE" else "低"
         st.markdown(f"""
-        <div style="text-align: center; margin-bottom: 20px;">
-            <h1 style="font-size: 28px; font-weight: bold; margin: 0;">MVI風險預測</h1>
-            <h2 style="font-size: 45px; font-weight: bold; margin: 15px 0; color: {'#F44336' if risk_level == 'HIGH' else '#FFC107' if risk_level == 'MODERATE' else '#4CAF50'};">{risk_level_zh}</h2>
+        <div style="text-align: center; margin-top: 0; margin-bottom: 20px;">
+            <h2 style="font-size: 60px; font-weight: bold; margin: 0; color: {'#F44336' if risk_level == 'HIGH' else '#FFC107' if risk_level == 'MODERATE' else '#4CAF50'};">{risk_level_zh}</h2>
         </div>
         """, unsafe_allow_html=True)
         
