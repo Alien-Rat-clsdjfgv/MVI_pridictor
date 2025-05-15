@@ -283,9 +283,6 @@ with col_input:
         step=0.1,
         format="%.1f"
     )
-    
-
-    
     st.markdown("</div>", unsafe_allow_html=True)
 
 # Calculate button
