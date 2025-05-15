@@ -289,6 +289,19 @@ if calc_button:
     # Calculate score
     total_score = calculate_score(afp, pivka_ii, tumor_burden)
     probability = calculate_probability(total_score)
+    
+    # Try to use model for advanced prediction if available
+    try:
+        # Get prediction from model
+        probability_model = mvi_model.predict_probability(afp, pivka_ii, tumor_burden)
+        
+        # If probability is significantly different, show a message and use model prediction
+        if abs(probability_model - probability) > 5:
+            probability = probability_model
+    except Exception as e:
+        # If model prediction fails, continue with traditional scoring
+        pass
+        
     risk_level = determine_risk_level(probability)
     recommendations = get_recommendations(risk_level)
     
@@ -388,6 +401,13 @@ This tool calculates HCC recurrence risk based on:
 
 The risk assessment helps guide post-operative monitoring and treatment decisions.
 """)
+
+# Add link to admin panel in sidebar (hidden from regular users)
+st.sidebar.markdown("---")
+admin_expander = st.sidebar.expander("Admin Access", expanded=False)
+with admin_expander:
+    st.markdown("[Open Admin Panel](admin)")
+    st.caption("Requires authentication")
 
 # Display the reference table
 with st.expander("View Scoring Reference Table"):
