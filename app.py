@@ -242,45 +242,49 @@ def save_assessment(patient_id, assessment_data):
 col_input, col_button = st.columns([3, 1])
 
 with col_input:
-    # Create a card-like container for the inputs
+    # 超級簡化界面，專注於基本輸入欄位，使表格更加有組織性
     st.markdown("""
     <div style="background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-        <h3 style="font-size: 16px; margin-bottom: 15px;">Input Clinical Values</h3>
+        <h3 style="font-size: 18px; margin-bottom: 15px; text-align: center;">臨床參數輸入</h3>
     """, unsafe_allow_html=True)
     
-    # 簡化界面，只保留基本輸入功能
-    patient_id = st.text_input("病歷號（選填）", "", key="patient_id_main")
-    assessment_date = st.date_input("評估日期", datetime.date.today(), key="date_main")
-    afp_value = 15.0
-    pivka_ii_value = 25.0
-    tumor_burden_value = 5.0
+    # 隱藏不必要的病例數據，專注於臨床參數
+    patient_id = ""
+    assessment_date = datetime.date.today()
     
-    # Clinical Parameters
-    afp = st.number_input(
-        "AFP (ng/mL)",
-        min_value=0.0,
-        value=afp_value,
-        step=0.1,
-        help="Alpha-fetoprotein level. Score 1 point if ≥ 20 ng/mL"
-    )
+    # 臨床參數 - 只顯示必要的三個值
+    col1, col2 = st.columns(2)
     
-    pivka_ii = st.number_input(
-        "PIVKA-II (ng/mL)",
-        min_value=0.0,
-        value=pivka_ii_value,
-        step=0.1,
-        help="Protein Induced by Vitamin K Absence or Antagonist-II. Score 2 points if ≥ 35 ng/mL"
-    )
+    with col1:
+        afp = st.number_input(
+            "AFP (ng/mL)",
+            min_value=0.0,
+            max_value=100000.0,
+            value=15.0,
+            step=1.0,
+            format="%.1f"
+        )
+    
+    with col2:
+        pivka_ii = st.number_input(
+            "PIVKA-II (ng/mL)",
+            min_value=0.0,
+            max_value=100000.0,
+            value=25.0,
+            step=1.0,
+            format="%.1f"
+        )
     
     tumor_burden = st.number_input(
-        "Tumor Burden Score",
+        "腫瘤負荷指數",
         min_value=0.0,
-        value=tumor_burden_value,
+        max_value=100.0,
+        value=5.0,
         step=0.1,
-        help="Composite score based on tumor size and number. Score 1 point if ≥ 6.4"
+        format="%.1f"
     )
     
-    # 移除查詢功能
+
     
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -345,41 +349,6 @@ if calc_button:
         # Close the white card div
         st.markdown("</div>", unsafe_allow_html=True)
         
-        # 移除評分細節展開區，只在顯眼位置顯示結果
-        
-        # Save results option
-        if patient_id:
-            if st.button("保存評估結果", key="save_results"):
-                # Prepare data to save
-                assessment_data = {
-                    "patient_id": patient_id,
-                    "assessment_date": assessment_date.strftime("%Y-%m-%d"),
-                    "parameters": {
-                        "afp": afp,
-                        "pivka_ii": pivka_ii,
-                        "tumor_burden": tumor_burden
-                    },
-                    "results": {
-                        "total_score": total_score,
-                        "probability": probability,
-                        "risk_level": risk_level,
-                        "recommendations": recommendations
-                    }
-                }
-                
-                try:
-                    # First try to save to database
-                    patient_id = save_patient(assessment_data)
-                    st.success(f"評估結果已成功保存到數據庫 (ID: {patient_id})")
-                except Exception as e:
-                    # Fall back to file system if database fails
-                    try:
-                        saved_file = save_assessment(patient_id, assessment_data)
-                        st.success(f"評估結果已成功保存到文件 {saved_file}")
-                    except Exception as e2:
-                        st.error(f"保存評估結果失敗: {str(e2)}")
-        else:
-            st.warning("請輸入病歷號以啟用評估結果保存功能")
 
 # Information section
 st.sidebar.markdown("---")
