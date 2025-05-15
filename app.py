@@ -391,15 +391,15 @@ if calc_button:
         st.markdown("</div>", unsafe_allow_html=True)
         
         # Display the scoring breakdown in expandable section
-        with st.expander("View Scoring Breakdown"):
-            st.markdown(f"**Total Score:** {total_score}")
-            st.markdown(f"**Probability of MVI:** {probability}%")
+        with st.expander("查看評分詳情"):
+            st.markdown(f"**總分:** {total_score}")
+            st.markdown(f"**MVI機率:** {probability}%")
             
             details_df = pd.DataFrame({
-                "Parameter": ["AFP", "PIVKA-II", "Tumor Burden Score"],
-                "Value": [f"{afp:.1f} ng/mL", f"{pivka_ii:.1f} ng/mL", f"{tumor_burden:.1f}"],
-                "Threshold": ["≥20", "≥35", "≥6.4"],
-                "Points": [
+                "參數": ["AFP", "PIVKA-II", "腫瘤負荷指數"],
+                "數值": [f"{afp:.1f} ng/mL", f"{pivka_ii:.1f} ng/mL", f"{tumor_burden:.1f}"],
+                "閾值": ["≥20", "≥35", "≥6.4"],
+                "得分": [
                     "1" if afp >= 20 else "0",
                     "2" if pivka_ii >= 35 else "0",
                     "1" if tumor_burden >= 6.4 else "0"
@@ -431,27 +431,27 @@ if calc_button:
                 try:
                     # First try to save to database
                     patient_id = save_patient(assessment_data)
-                    st.success(f"Assessment saved successfully to database (ID: {patient_id})")
+                    st.success(f"評估結果已成功保存到數據庫 (ID: {patient_id})")
                 except Exception as e:
                     # Fall back to file system if database fails
                     try:
                         saved_file = save_assessment(patient_id, assessment_data)
-                        st.success(f"Assessment saved successfully to {saved_file}")
+                        st.success(f"評估結果已成功保存到文件 {saved_file}")
                     except Exception as e2:
-                        st.error(f"Failed to save assessment: {str(e2)}")
+                        st.error(f"保存評估結果失敗: {str(e2)}")
         else:
-            st.warning("Enter a Patient ID to enable saving of assessment results")
+            st.warning("請輸入病歷號以啟用評估結果保存功能")
 
 # Information section
 st.sidebar.markdown("---")
-st.sidebar.header("About")
+st.sidebar.header("關於")
 st.sidebar.info("""
-This tool calculates HCC recurrence risk based on:
+此工具根據以下臨床參數計算MVI風險:
 - AFP (Alpha-fetoprotein)
 - PIVKA-II (Protein Induced by Vitamin K Absence)
-- Tumor Burden Score
+- 腫瘤負荷指數 (Tumor Burden Score)
 
-The risk assessment helps guide post-operative monitoring and treatment decisions.
+風險評估有助於指導術後監測和治療決策。
 """)
 
 # Add link to admin panel in sidebar (hidden from regular users)
