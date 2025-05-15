@@ -23,7 +23,7 @@ class MVIModel:
         self.features = ['afp', 'pivka_ii', 'tumor_burden']
         self.thresholds = {
             'afp': 20.0,
-            'pivka_ii': 35.0,
+            'pivka_ii': 35.0,  # Value kept same but unit changed from mAU/mL to ng/mL
             'tumor_burden': 6.4
         }
         self.points = {

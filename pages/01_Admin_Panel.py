@@ -226,7 +226,7 @@ elif page == "Model Management":
     
     1. **Initial Scoring System:**
        - AFP ≥ 20 ng/mL: 1 point
-       - PIVKA-II ≥ 35 mAU/mL: 2 points
+       - PIVKA-II ≥ 35 ng/mL: 2 points
        - Tumor Burden Score ≥ 6.4: 1 point
        - Total Score (0-4) maps to MVI probabilities (30.8% to 86.7%)
     

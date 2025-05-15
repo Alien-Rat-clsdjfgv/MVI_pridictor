@@ -262,11 +262,11 @@ with col_input:
     )
     
     pivka_ii = st.number_input(
-        "PIVKA-II (mAU/mL)",
+        "PIVKA-II (ng/mL)",
         min_value=0.0,
         value=25.0,
         step=0.1,
-        help="Protein Induced by Vitamin K Absence or Antagonist-II. Score 2 points if ≥ 35 mAU/mL"
+        help="Protein Induced by Vitamin K Absence or Antagonist-II. Score 2 points if ≥ 35 ng/mL"
     )
     
     tumor_burden = st.number_input(
@@ -345,7 +345,7 @@ if calc_button:
             
             details_df = pd.DataFrame({
                 "Parameter": ["AFP", "PIVKA-II", "Tumor Burden Score"],
-                "Value": [f"{afp:.1f} ng/mL", f"{pivka_ii:.1f} mAU/mL", f"{tumor_burden:.1f}"],
+                "Value": [f"{afp:.1f} ng/mL", f"{pivka_ii:.1f} ng/mL", f"{tumor_burden:.1f}"],
                 "Threshold": ["≥20", "≥35", "≥6.4"],
                 "Points": [
                     "1" if afp >= 20 else "0",
@@ -411,10 +411,17 @@ with admin_expander:
 
 # Display the reference table
 with st.expander("View Scoring Reference Table"):
+    # Get updated coefficients from model
+    model_coefficients = mvi_model.get_coefficients()
+    
     # Create a DataFrame for the reference table
     ref_data = {
         "Predictor variables": ["AFP", "AFP", "PIVKA-II", "PIVKA-II", "Tumor burden score", "Tumor burden score"],
-        "Regression coefficients (β)": [0.647, 0.647, 1.206, 1.206, 0.916, 0.916],
+        "Regression coefficients (β)": [
+            model_coefficients['afp'], model_coefficients['afp'], 
+            model_coefficients['pivka_ii'], model_coefficients['pivka_ii'], 
+            model_coefficients['tumor_burden'], model_coefficients['tumor_burden']
+        ],
         "Categories": ["<20", "≥20", "<35", "≥35", "<6.4", "≥6.4"],
         "Points": [0, 1, 0, 2, 0, 1]
     }
