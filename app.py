@@ -406,7 +406,7 @@ The risk assessment helps guide post-operative monitoring and treatment decision
 st.sidebar.markdown("---")
 admin_expander = st.sidebar.expander("Admin Access", expanded=False)
 with admin_expander:
-    st.markdown("[Open Admin Panel](admin)")
+    st.markdown("[Open Admin Panel](/Admin_Panel)")
     st.caption("Requires authentication")
 
 # Display the reference table
