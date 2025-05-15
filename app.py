@@ -103,67 +103,26 @@ st.markdown("""
 st.title("HCC Recurrence Risk Assessment")
 st.markdown("<style>h1{display: none;}</style>", unsafe_allow_html=True)
 
-# Create a function to calculate the score based on the parameters
+# Import our model for prediction
+from model import mvi_model
+from database import save_patient
+
+# These functions are now provided by the model
 def calculate_score(afp, pivka_ii, tumor_burden):
-    score = 0
-    
-    # AFP scoring
-    if afp >= 20:
-        score += 1
-    
-    # PIVKA-II scoring
-    if pivka_ii >= 35:
-        score += 2
-    
-    # Tumor burden scoring
-    if tumor_burden >= 6.4:
-        score += 1
-    
-    return score
+    """Calculate total score based on clinical parameters"""
+    return mvi_model.calculate_score(afp, pivka_ii, tumor_burden)
 
-# Function to calculate probability of MVI based on total score
 def calculate_probability(score):
-    probability_map = {
-        0: 30.8,
-        1: 46.6,
-        2: 63.1,
-        3: 77.0,
-        4: 86.7
-    }
-    return probability_map.get(score, 0)
+    """Calculate MVI probability based on score"""
+    return mvi_model.calculate_probability_from_score(score)
 
-# Function to determine risk level based on probability
 def determine_risk_level(probability):
-    if probability < 40:
-        return "LOW"
-    elif probability < 70:
-        return "MODERATE"
-    else:
-        return "HIGH"
+    """Determine risk level based on probability"""
+    return mvi_model.determine_risk_level(probability)
 
-# Function to get recommendations based on risk level
 def get_recommendations(risk_level):
-    if risk_level == "LOW":
-        return [
-            "Regular follow-up every 6 months.",
-            "Monitor AFP levels annually.",
-            "Consider ultrasound examination yearly.",
-            "Maintain healthy lifestyle."
-        ]
-    elif risk_level == "MODERATE":
-        return [
-            "Regular follow-up every 4 months.",
-            "Monitor AFP and PIVKA-II levels bi-annually.",
-            "Consider CT/MRI examination yearly.",
-            "Evaluate potential adjuvant therapy options."
-        ]
-    else:  # HIGH
-        return [
-            "Proceed with adjuvant therapy.",
-            "Perform close monitoring every 3 months.",
-            "Order MRI or CT for 3-year surveillance.",
-            "Review AFP and PIVKA-II levels regularly."
-        ]
+    """Get recommendations based on risk level"""
+    return mvi_model.get_recommendations(risk_level)
 
 # Function to create a gauge chart
 def create_gauge_chart(probability, risk_level):
@@ -404,8 +363,17 @@ if calc_button:
                     }
                 }
                 
-                saved_file = save_assessment(patient_id, assessment_data)
-                st.success(f"Assessment saved successfully to {saved_file}")
+                try:
+                    # First try to save to database
+                    patient_id = save_patient(assessment_data)
+                    st.success(f"Assessment saved successfully to database (ID: {patient_id})")
+                except Exception as e:
+                    # Fall back to file system if database fails
+                    try:
+                        saved_file = save_assessment(patient_id, assessment_data)
+                        st.success(f"Assessment saved successfully to {saved_file}")
+                    except Exception as e2:
+                        st.error(f"Failed to save assessment: {str(e2)}")
         else:
             st.warning("Enter a Patient ID to enable saving of assessment results")
 
