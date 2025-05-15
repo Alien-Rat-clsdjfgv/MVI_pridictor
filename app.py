@@ -105,7 +105,7 @@ st.markdown("<style>h1{display: none;}</style>", unsafe_allow_html=True)
 
 # Import our model for prediction
 from model import mvi_model
-from database import save_patient
+from database import save_patient, get_patient, get_patient_by_values
 
 # These functions are now provided by the model
 def calculate_score(afp, pivka_ii, tumor_burden):
@@ -248,15 +248,55 @@ with col_input:
         <h3 style="font-size: 16px; margin-bottom: 15px;">Input Clinical Values</h3>
     """, unsafe_allow_html=True)
     
-    # Get patient information directly in the main section
-    patient_id = st.text_input("Patient ID", "", key="patient_id_main")
-    assessment_date = st.date_input("Assessment Date", datetime.date.today(), key="date_main")
+    # 新增查詢模式選擇
+    lookup_mode = st.radio(
+        "使用模式",
+        ["輸入新資料", "查詢病例（使用臨床數值）", "查詢病例（使用病歷號）"],
+        horizontal=True,
+        key="lookup_mode"
+    )
+    
+    # 根據查詢模式顯示不同選項
+    if lookup_mode == "查詢病例（使用病歷號）":
+        patient_id = st.text_input("病歷號", "", key="patient_id_main")
+        if patient_id:
+            # 查找病例
+            patient_record = get_patient(patient_id)
+            if patient_record:
+                st.success(f"找到病歷號為 {patient_id} 的病人記錄")
+                # 預填臨床數值
+                afp_value = patient_record['afp']
+                pivka_ii_value = patient_record['pivka_ii']
+                tumor_burden_value = patient_record['tumor_burden']
+            else:
+                st.error(f"找不到病歷號為 {patient_id} 的病人記錄")
+                afp_value = 15.0
+                pivka_ii_value = 25.0
+                tumor_burden_value = 5.0
+        else:
+            afp_value = 15.0
+            pivka_ii_value = 25.0
+            tumor_burden_value = 5.0
+        assessment_date = st.date_input("評估日期", datetime.date.today(), key="date_main")
+    elif lookup_mode == "查詢病例（使用臨床數值）":
+        patient_id = ""  # 不需要病歷號
+        assessment_date = st.date_input("評估日期", datetime.date.today(), key="date_main")
+        # 臨床參數將在下面輸入
+        afp_value = 15.0
+        pivka_ii_value = 25.0
+        tumor_burden_value = 5.0
+    else:  # 輸入新資料
+        patient_id = st.text_input("病歷號（選填）", "", key="patient_id_main")
+        assessment_date = st.date_input("評估日期", datetime.date.today(), key="date_main")
+        afp_value = 15.0
+        pivka_ii_value = 25.0
+        tumor_burden_value = 5.0
     
     # Clinical Parameters
     afp = st.number_input(
         "AFP (ng/mL)",
         min_value=0.0,
-        value=15.0,
+        value=afp_value,
         step=0.1,
         help="Alpha-fetoprotein level. Score 1 point if ≥ 20 ng/mL"
     )
@@ -264,7 +304,7 @@ with col_input:
     pivka_ii = st.number_input(
         "PIVKA-II (ng/mL)",
         min_value=0.0,
-        value=25.0,
+        value=pivka_ii_value,
         step=0.1,
         help="Protein Induced by Vitamin K Absence or Antagonist-II. Score 2 points if ≥ 35 ng/mL"
     )
@@ -272,10 +312,22 @@ with col_input:
     tumor_burden = st.number_input(
         "Tumor Burden Score",
         min_value=0.0,
-        value=5.0,
+        value=tumor_burden_value,
         step=0.1,
         help="Composite score based on tumor size and number. Score 1 point if ≥ 6.4"
     )
+    
+    # 如果是使用臨床數值查詢模式，添加查詢按鈕
+    if lookup_mode == "查詢病例（使用臨床數值）":
+        lookup_button = st.button("搜尋相似病例", key="lookup_button")
+        if lookup_button:
+            # 使用臨床值查找相似病例
+            patient_record = get_patient_by_values(afp, pivka_ii, tumor_burden)
+            if patient_record:
+                st.success("找到匹配的病人記錄！")
+                st.json(patient_record)
+            else:
+                st.error("無法找到匹配的病例記錄。請嘗試調整臨床參數或使用病歷號查詢。")
     
     st.markdown("</div>", unsafe_allow_html=True)
 

@@ -177,6 +177,43 @@ def get_patient(patient_id):
         return None
     finally:
         session.close()
+        
+# Get patient by clinical values without requiring patient ID
+def get_patient_by_values(afp, pivka_ii, tumor_burden):
+    """查找具有最接近指定臨床值的患者記錄"""
+    session = Session()
+    try:
+        # 查找所有患者
+        patients = session.query(Patient).all()
+        
+        if not patients:
+            return None
+            
+        # 計算每個患者記錄與輸入值的差異
+        best_match = None
+        min_difference = float('inf')
+        
+        for patient in patients:
+            # 計算距離分數 (使用相對誤差)
+            afp_diff = abs(patient.afp - afp) / (patient.afp + 1e-10)
+            pivka_diff = abs(patient.pivka_ii - pivka_ii) / (patient.pivka_ii + 1e-10)
+            tumor_diff = abs(patient.tumor_burden - tumor_burden) / (patient.tumor_burden + 1e-10)
+            
+            # 總差異分數 (加權平均)
+            total_diff = (afp_diff + pivka_diff + tumor_diff) / 3
+            
+            # 如果找到更接近的匹配
+            if total_diff < min_difference:
+                min_difference = total_diff
+                best_match = patient
+                
+        # 如果差異太大，認為沒有匹配的記錄
+        if min_difference > 0.3:  # 30%差異閾值
+            return None
+            
+        return best_match.to_dict() if best_match else None
+    finally:
+        session.close()
 
 # Update patient's actual MVI status (for model improvement)
 def update_mvi_status(patient_id, actual_mvi):
