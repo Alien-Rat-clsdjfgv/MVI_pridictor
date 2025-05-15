@@ -8,7 +8,7 @@ import os
 
 # Set page configuration
 st.set_page_config(
-    page_title="HCC Recurrence Risk Calculator",
+    page_title="MVI預測",
     page_icon="🏥",
     layout="centered",
     initial_sidebar_state="expanded"
@@ -93,14 +93,14 @@ st.markdown("""
         </a>
     </div>
     <div style="flex: 2; text-align: center;">
-        <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Risk Assessment</h2>
+        <h2 style="margin: 0; font-size: 20px; font-weight: 600;">MVI預測</h2>
     </div>
     <div style="flex: 1;"></div>
 </div>
 """, unsafe_allow_html=True)
 
 # Hidden title - for navigational purposes only
-st.title("HCC Recurrence Risk Assessment")
+st.title("MVI預測")
 st.markdown("<style>h1{display: none;}</style>", unsafe_allow_html=True)
 
 # Import our model for prediction
@@ -318,7 +318,7 @@ if calc_button:
         # Display risk level prominently
         st.markdown(f"""
         <div style="text-align: center; margin-bottom: 20px;">
-            <h1 style="font-size: 28px; font-weight: bold; margin: 0;">Postoperative<br>HCC Recurrence</h1>
+            <h1 style="font-size: 28px; font-weight: bold; margin: 0;">MVI風險預測</h1>
             <h2 style="font-size: 36px; font-weight: bold; margin: 5px 0; color: {'#F44336' if risk_level == 'HIGH' else '#FFC107' if risk_level == 'MODERATE' else '#4CAF50'};">{risk_level}</h2>
         </div>
         """, unsafe_allow_html=True)
