@@ -10,16 +10,98 @@ import os
 st.set_page_config(
     page_title="HCC Recurrence Risk Calculator",
     page_icon="🏥",
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="expanded"
 )
 
-# Title and introduction
-st.title("HCC Recurrence Risk Assessment")
+# Custom CSS to make the app look more like a mobile app
 st.markdown("""
-This application calculates the postoperative HCC recurrence risk based on clinical parameters.
-Enter the patient's values below to generate a risk assessment.
-""")
+<style>
+    .main .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        max-width: 430px;
+    }
+    h1, h2, h3 {
+        font-family: 'Helvetica Neue', sans-serif;
+    }
+    .stButton>button {
+        width: 100%;
+        border-radius: 20px;
+        background-color: #0078FF;
+        color: white;
+        font-weight: bold;
+        border: none;
+        padding: 10px 24px;
+        margin-top: 10px;
+    }
+    .stTitle {
+        font-size: 24px !important;
+        font-weight: 600 !important;
+        text-align: center;
+    }
+    div[data-testid="stVerticalBlock"] {
+        gap: 0.5rem;
+    }
+    div[data-testid="stHorizontalBlock"] {
+        gap: 0.5rem;
+    }
+    .reportview-container .sidebar-content {
+        padding-top: 0rem;
+    }
+    .sidebar .sidebar-content {
+        background-color: #F0F2F6;
+    }
+    .css-18e3th9 {
+        padding-top: 0rem;
+        padding-bottom: 0rem;
+    }
+    .element-container {
+        margin-bottom: 10px;
+    }
+    .stApp {
+        background-color: #F8F9FA;
+    }
+    div[data-testid="stExpander"] {
+        background-color: white;
+        border-radius: 10px;
+        border: 1px solid #e6e6e6;
+    }
+    div[data-testid="stDataFrame"] {
+        background-color: white;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    div.stTable {
+        width: 100%;
+        background-color: white;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .row-widget.stButton {
+        text-align: center;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Top navigation bar with back button
+st.markdown("""
+<div style="display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #e6e6e6;">
+    <div style="flex: 1; text-align: left;">
+        <a href="#" style="color: #000; text-decoration: none;">
+            <span style="font-size: 24px;">←</span>
+        </a>
+    </div>
+    <div style="flex: 2; text-align: center;">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Risk Assessment</h2>
+    </div>
+    <div style="flex: 1;"></div>
+</div>
+""", unsafe_allow_html=True)
+
+# Hidden title - for navigational purposes only
+st.title("HCC Recurrence Risk Assessment")
+st.markdown("<style>h1{display: none;}</style>", unsafe_allow_html=True)
 
 # Create a function to calculate the score based on the parameters
 def calculate_score(afp, pivka_ii, tumor_burden):
@@ -86,41 +168,94 @@ def get_recommendations(risk_level):
 # Function to create a gauge chart
 def create_gauge_chart(probability, risk_level):
     if risk_level == "LOW":
-        color = "green"
+        color = "#4CAF50"  # Green
+        position = 20
     elif risk_level == "MODERATE":
-        color = "gold"
+        color = "#FFC107"  # Yellow/Gold
+        position = 55
     else:  # HIGH
-        color = "red"
+        color = "#F44336"  # Red
+        position = 85
     
+    # Create a half-circle gauge with mobile app styling
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=probability,
         domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': f"Postoperative<br>HCC Recurrence<br>{risk_level}", 'font': {'size': 24}},
+        number={'suffix': "%", 'font': {'size': 30, 'color': "black", 'family': "Arial"}},
         gauge={
-            'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
-            'bar': {'color': "black"},
+            'axis': {
+                'range': [None, 100],
+                'tickmode': 'array',
+                'tickvals': [0, 50, 100],
+                'ticktext': ['', '', ''],
+                'tickwidth': 0,
+                'tickcolor': "white"
+            },
+            'bar': {'color': "black", 'thickness': 0.2},
             'bgcolor': "white",
-            'borderwidth': 2,
-            'bordercolor': "gray",
+            'borderwidth': 0,
+            'bordercolor': "white",
             'steps': [
-                {'range': [0, 40], 'color': 'green'},
-                {'range': [40, 70], 'color': 'gold'},
-                {'range': [70, 100], 'color': 'red'}
+                {'range': [0, 40], 'color': '#4CAF50'},  # Green for LOW
+                {'range': [40, 70], 'color': '#FFC107'},  # Yellow/Gold for MODERATE
+                {'range': [70, 100], 'color': '#F44336'}  # Red for HIGH
             ],
             'threshold': {
-                'line': {'color': "black", 'width': 4},
-                'thickness': 0.75,
+                'line': {'color': "black", 'width': 6},
+                'thickness': 0.9,
                 'value': probability
             }
         }
     ))
     
+    # Update layout to match mobile app design
     fig.update_layout(
-        height=350,
-        margin=dict(l=20, r=20, t=50, b=20),
+        height=230,
+        margin=dict(l=5, r=5, t=60, b=10),
         paper_bgcolor="white",
-        font={'color': "black", 'family': "Arial"}
+        font={'color': "black", 'family': "Arial, Helvetica, sans-serif"},
+        annotations=[
+            dict(
+                x=0.1,
+                y=0.8,
+                xref="paper",
+                yref="paper",
+                text="LOW",
+                showarrow=False,
+                font=dict(
+                    family="Arial, Helvetica, sans-serif",
+                    size=14,
+                    color="#4CAF50"
+                )
+            ),
+            dict(
+                x=0.5,
+                y=0.92,
+                xref="paper",
+                yref="paper",
+                text="MODERATE",
+                showarrow=False,
+                font=dict(
+                    family="Arial, Helvetica, sans-serif",
+                    size=14,
+                    color="#FFC107"
+                )
+            ),
+            dict(
+                x=0.9,
+                y=0.8,
+                xref="paper",
+                yref="paper",
+                text="HIGH",
+                showarrow=False,
+                font=dict(
+                    family="Arial, Helvetica, sans-serif",
+                    size=14,
+                    color="#F44336"
+                )
+            )
+        ]
     )
     
     return fig
@@ -140,42 +275,58 @@ def save_assessment(patient_id, assessment_data):
     
     return filename
 
-# Sidebar for input parameters
-st.sidebar.header("Patient Information")
-patient_id = st.sidebar.text_input("Patient ID", "")
-assessment_date = st.sidebar.date_input("Assessment Date", datetime.date.today())
+# We'll completely remove the sidebar inputs since we moved them to the main area
+# Just keep this as a placeholder for the mobile app
+# Sidebar will only contain the About information
 
-st.sidebar.header("Clinical Parameters")
+# Restructure the layout to match the mobile app in the image
+col_input, col_button = st.columns([3, 1])
 
-# AFP input
-afp = st.sidebar.number_input(
-    "AFP (ng/mL)",
-    min_value=0.0,
-    value=15.0,
-    step=0.1,
-    help="Alpha-fetoprotein level. Score 1 point if ≥ 20 ng/mL"
-)
-
-# PIVKA-II input
-pivka_ii = st.sidebar.number_input(
-    "PIVKA-II (mAU/mL)",
-    min_value=0.0,
-    value=25.0,
-    step=0.1,
-    help="Protein Induced by Vitamin K Absence or Antagonist-II. Score 2 points if ≥ 35 mAU/mL"
-)
-
-# Tumor burden score input
-tumor_burden = st.sidebar.number_input(
-    "Tumor Burden Score",
-    min_value=0.0,
-    value=5.0,
-    step=0.1,
-    help="Composite score based on tumor size and number. Score 1 point if ≥ 6.4"
-)
+with col_input:
+    # Create a card-like container for the inputs
+    st.markdown("""
+    <div style="background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <h3 style="font-size: 16px; margin-bottom: 15px;">Input Clinical Values</h3>
+    """, unsafe_allow_html=True)
+    
+    # Get patient information directly in the main section
+    patient_id = st.text_input("Patient ID", "", key="patient_id_main")
+    assessment_date = st.date_input("Assessment Date", datetime.date.today(), key="date_main")
+    
+    # Clinical Parameters
+    afp = st.number_input(
+        "AFP (ng/mL)",
+        min_value=0.0,
+        value=15.0,
+        step=0.1,
+        help="Alpha-fetoprotein level. Score 1 point if ≥ 20 ng/mL"
+    )
+    
+    pivka_ii = st.number_input(
+        "PIVKA-II (mAU/mL)",
+        min_value=0.0,
+        value=25.0,
+        step=0.1,
+        help="Protein Induced by Vitamin K Absence or Antagonist-II. Score 2 points if ≥ 35 mAU/mL"
+    )
+    
+    tumor_burden = st.number_input(
+        "Tumor Burden Score",
+        min_value=0.0,
+        value=5.0,
+        step=0.1,
+        help="Composite score based on tumor size and number. Score 1 point if ≥ 6.4"
+    )
+    
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # Calculate button
-if st.sidebar.button("Calculate Risk"):
+calc_button = st.button("Calculate Risk Assessment", key="calculate_risk")
+
+# Create a container for results
+result_container = st.container()
+
+if calc_button:
     # Calculate score
     total_score = calculate_score(afp, pivka_ii, tumor_burden)
     probability = calculate_probability(total_score)
@@ -183,63 +334,80 @@ if st.sidebar.button("Calculate Risk"):
     recommendations = get_recommendations(risk_level)
     
     # Display the results
-    col1, col2 = st.columns([3, 2])
-    
-    with col1:
-        st.header("Risk Assessment")
+    with result_container:
+        # White card for results
+        st.markdown("""
+        <div style="background-color: white; padding: 20px; border-radius: 15px; margin-top: 10px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        """, unsafe_allow_html=True)
+        
         # Display the gauge chart
         st.plotly_chart(create_gauge_chart(probability, risk_level), use_container_width=True)
-    
-    with col2:
-        st.header("Assessment Details")
-        st.markdown(f"**Total Score:** {total_score}")
-        st.markdown(f"**Probability of MVI:** {probability}%")
         
-        # Display scoring details
-        st.subheader("Scoring Details")
+        # Display risk level prominently
+        st.markdown(f"""
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h1 style="font-size: 28px; font-weight: bold; margin: 0;">Postoperative<br>HCC Recurrence</h1>
+            <h2 style="font-size: 36px; font-weight: bold; margin: 5px 0; color: {'#F44336' if risk_level == 'HIGH' else '#FFC107' if risk_level == 'MODERATE' else '#4CAF50'};">{risk_level}</h2>
+        </div>
+        """, unsafe_allow_html=True)
         
-        details_df = pd.DataFrame({
-            "Parameter": ["AFP", "PIVKA-II", "Tumor Burden Score"],
-            "Value": [f"{afp:.1f} ng/mL", f"{pivka_ii:.1f} mAU/mL", f"{tumor_burden:.1f}"],
-            "Threshold": ["≥20", "≥35", "≥6.4"],
-            "Points": [
-                "1" if afp >= 20 else "0",
-                "2" if pivka_ii >= 35 else "0",
-                "1" if tumor_burden >= 6.4 else "0"
-            ]
-        })
+        # Add divider before recommendations
+        st.markdown("<hr style='margin: 15px 0; border-color: #e6e6e6;'>", unsafe_allow_html=True)
         
-        st.table(details_df)
-    
-    # Recommended actions
-    st.header("Recommended Actions")
-    for rec in recommendations:
-        st.markdown(f"• {rec}")
-    
-    # Save results option
-    if patient_id:
-        if st.button("Save Assessment Results"):
-            # Prepare data to save
-            assessment_data = {
-                "patient_id": patient_id,
-                "assessment_date": assessment_date.strftime("%Y-%m-%d"),
-                "parameters": {
-                    "afp": afp,
-                    "pivka_ii": pivka_ii,
-                    "tumor_burden": tumor_burden
-                },
-                "results": {
-                    "total_score": total_score,
-                    "probability": probability,
-                    "risk_level": risk_level,
-                    "recommendations": recommendations
-                }
-            }
+        # Recommended actions with better styling
+        st.markdown("""
+        <h3 style="font-size: 20px; margin-bottom: 15px;">Recommended Actions</h3>
+        """, unsafe_allow_html=True)
+        
+        # List recommended actions with bullet points
+        for rec in recommendations:
+            st.markdown(f"<p style='margin: 10px 0; padding-left: 20px; position: relative;'>• {rec}</p>", unsafe_allow_html=True)
+        
+        # Close the white card div
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Display the scoring breakdown in expandable section
+        with st.expander("View Scoring Breakdown"):
+            st.markdown(f"**Total Score:** {total_score}")
+            st.markdown(f"**Probability of MVI:** {probability}%")
             
-            saved_file = save_assessment(patient_id, assessment_data)
-            st.success(f"Assessment saved successfully to {saved_file}")
-    else:
-        st.warning("Enter a Patient ID to enable saving of assessment results")
+            details_df = pd.DataFrame({
+                "Parameter": ["AFP", "PIVKA-II", "Tumor Burden Score"],
+                "Value": [f"{afp:.1f} ng/mL", f"{pivka_ii:.1f} mAU/mL", f"{tumor_burden:.1f}"],
+                "Threshold": ["≥20", "≥35", "≥6.4"],
+                "Points": [
+                    "1" if afp >= 20 else "0",
+                    "2" if pivka_ii >= 35 else "0",
+                    "1" if tumor_burden >= 6.4 else "0"
+                ]
+            })
+            
+            st.table(details_df)
+        
+        # Save results option
+        if patient_id:
+            if st.button("Save Assessment Results", key="save_results"):
+                # Prepare data to save
+                assessment_data = {
+                    "patient_id": patient_id,
+                    "assessment_date": assessment_date.strftime("%Y-%m-%d"),
+                    "parameters": {
+                        "afp": afp,
+                        "pivka_ii": pivka_ii,
+                        "tumor_burden": tumor_burden
+                    },
+                    "results": {
+                        "total_score": total_score,
+                        "probability": probability,
+                        "risk_level": risk_level,
+                        "recommendations": recommendations
+                    }
+                }
+                
+                saved_file = save_assessment(patient_id, assessment_data)
+                st.success(f"Assessment saved successfully to {saved_file}")
+        else:
+            st.warning("Enter a Patient ID to enable saving of assessment results")
 
 # Information section
 st.sidebar.markdown("---")
