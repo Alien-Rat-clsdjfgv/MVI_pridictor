@@ -332,7 +332,7 @@ with col_input:
     st.markdown("</div>", unsafe_allow_html=True)
 
 # Calculate button
-calc_button = st.button("Calculate Risk Assessment", key="calculate_risk")
+calc_button = st.button("計算風險評估", key="calculate_risk")
 
 # Create a container for results
 result_container = st.container()
@@ -342,17 +342,18 @@ if calc_button:
     total_score = calculate_score(afp, pivka_ii, tumor_burden)
     probability = calculate_probability(total_score)
     
-    # Try to use model for advanced prediction if available
-    try:
-        # Get prediction from model
-        probability_model = mvi_model.predict_probability(afp, pivka_ii, tumor_burden)
-        
-        # If probability is significantly different, show a message and use model prediction
-        if abs(probability_model - probability) > 5:
-            probability = probability_model
-    except Exception as e:
-        # If model prediction fails, continue with traditional scoring
-        pass
+    # 使用原始公式，不使用模型預測
+    # 注釋以下代碼確保使用原始係數計算
+    # try:
+    #     # Get prediction from model
+    #     probability_model = mvi_model.predict_probability(afp, pivka_ii, tumor_burden)
+    #     
+    #     # If probability is significantly different, show a message and use model prediction
+    #     if abs(probability_model - probability) > 5:
+    #         probability = probability_model
+    # except Exception as e:
+    #     # If model prediction fails, continue with traditional scoring
+    #     pass
         
     risk_level = determine_risk_level(probability)
     recommendations = get_recommendations(risk_level)
@@ -410,7 +411,7 @@ if calc_button:
         
         # Save results option
         if patient_id:
-            if st.button("Save Assessment Results", key="save_results"):
+            if st.button("保存評估結果", key="save_results"):
                 # Prepare data to save
                 assessment_data = {
                     "patient_id": patient_id,
@@ -456,26 +457,30 @@ st.sidebar.info("""
 
 # Add link to admin panel in sidebar (hidden from regular users)
 st.sidebar.markdown("---")
-admin_expander = st.sidebar.expander("Admin Access", expanded=False)
+admin_expander = st.sidebar.expander("管理員入口", expanded=False)
 with admin_expander:
-    st.markdown("[Open Admin Panel](/Admin_Panel)")
-    st.caption("Requires authentication")
+    st.markdown("[開啟管理面板](/Admin_Panel)")
+    st.caption("需要身份驗證")
 
 # Display the reference table
-with st.expander("View Scoring Reference Table"):
-    # Get updated coefficients from model
-    model_coefficients = mvi_model.get_coefficients()
+with st.expander("查看評分參考表"):
+    # 使用原始係數
+    model_coefficients = {
+        'afp': 0.647,
+        'pivka_ii': 1.206,
+        'tumor_burden': 0.916
+    }
     
     # Create a DataFrame for the reference table
     ref_data = {
-        "Predictor variables": ["AFP", "AFP", "PIVKA-II", "PIVKA-II", "Tumor burden score", "Tumor burden score"],
-        "Regression coefficients (β)": [
+        "預測變量": ["AFP", "AFP", "PIVKA-II", "PIVKA-II", "腫瘤負荷指數", "腫瘤負荷指數"],
+        "回歸係數 (β)": [
             model_coefficients['afp'], model_coefficients['afp'], 
             model_coefficients['pivka_ii'], model_coefficients['pivka_ii'], 
             model_coefficients['tumor_burden'], model_coefficients['tumor_burden']
         ],
-        "Categories": ["<20", "≥20", "<35", "≥35", "<6.4", "≥6.4"],
-        "Points": [0, 1, 0, 2, 0, 1]
+        "分類": ["<20", "≥20", "<35", "≥35", "<6.4", "≥6.4"],
+        "分數": [0, 1, 0, 2, 0, 1]
     }
     
     ref_df = pd.DataFrame(ref_data)
@@ -483,8 +488,8 @@ with st.expander("View Scoring Reference Table"):
     
     # Create a DataFrame for the probability table
     prob_data = {
-        "Total score": [0, 1, 2, 3, 4],
-        "Probability of MVI": ["30.8%", "46.6%", "63.1%", "77.0%", "86.7%"]
+        "總分數": [0, 1, 2, 3, 4],
+        "MVI機率": ["30.8%", "46.6%", "63.1%", "77.0%", "86.7%"]
     }
     
     prob_df = pd.DataFrame(prob_data)
