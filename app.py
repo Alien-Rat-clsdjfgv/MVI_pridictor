@@ -248,49 +248,12 @@ with col_input:
         <h3 style="font-size: 16px; margin-bottom: 15px;">Input Clinical Values</h3>
     """, unsafe_allow_html=True)
     
-    # 新增查詢模式選擇
-    lookup_mode = st.radio(
-        "使用模式",
-        ["輸入新資料", "查詢病例（使用臨床數值）", "查詢病例（使用病歷號）"],
-        horizontal=True,
-        key="lookup_mode"
-    )
-    
-    # 根據查詢模式顯示不同選項
-    if lookup_mode == "查詢病例（使用病歷號）":
-        patient_id = st.text_input("病歷號", "", key="patient_id_main")
-        if patient_id:
-            # 查找病例
-            patient_record = get_patient(patient_id)
-            if patient_record:
-                st.success(f"找到病歷號為 {patient_id} 的病人記錄")
-                # 預填臨床數值
-                afp_value = patient_record['afp']
-                pivka_ii_value = patient_record['pivka_ii']
-                tumor_burden_value = patient_record['tumor_burden']
-            else:
-                st.error(f"找不到病歷號為 {patient_id} 的病人記錄")
-                afp_value = 15.0
-                pivka_ii_value = 25.0
-                tumor_burden_value = 5.0
-        else:
-            afp_value = 15.0
-            pivka_ii_value = 25.0
-            tumor_burden_value = 5.0
-        assessment_date = st.date_input("評估日期", datetime.date.today(), key="date_main")
-    elif lookup_mode == "查詢病例（使用臨床數值）":
-        patient_id = ""  # 不需要病歷號
-        assessment_date = st.date_input("評估日期", datetime.date.today(), key="date_main")
-        # 臨床參數將在下面輸入
-        afp_value = 15.0
-        pivka_ii_value = 25.0
-        tumor_burden_value = 5.0
-    else:  # 輸入新資料
-        patient_id = st.text_input("病歷號（選填）", "", key="patient_id_main")
-        assessment_date = st.date_input("評估日期", datetime.date.today(), key="date_main")
-        afp_value = 15.0
-        pivka_ii_value = 25.0
-        tumor_burden_value = 5.0
+    # 簡化界面，只保留基本輸入功能
+    patient_id = st.text_input("病歷號（選填）", "", key="patient_id_main")
+    assessment_date = st.date_input("評估日期", datetime.date.today(), key="date_main")
+    afp_value = 15.0
+    pivka_ii_value = 25.0
+    tumor_burden_value = 5.0
     
     # Clinical Parameters
     afp = st.number_input(
@@ -317,17 +280,7 @@ with col_input:
         help="Composite score based on tumor size and number. Score 1 point if ≥ 6.4"
     )
     
-    # 如果是使用臨床數值查詢模式，添加查詢按鈕
-    if lookup_mode == "查詢病例（使用臨床數值）":
-        lookup_button = st.button("搜尋相似病例", key="lookup_button")
-        if lookup_button:
-            # 使用臨床值查找相似病例
-            patient_record = get_patient_by_values(afp, pivka_ii, tumor_burden)
-            if patient_record:
-                st.success("找到匹配的病人記錄！")
-                st.json(patient_record)
-            else:
-                st.error("無法找到匹配的病例記錄。請嘗試調整臨床參數或使用病歷號查詢。")
+    # 移除查詢功能
     
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -368,20 +321,21 @@ if calc_button:
         # Display the gauge chart
         st.plotly_chart(create_gauge_chart(probability, risk_level), use_container_width=True)
         
-        # Display risk level prominently
+        # 根據您提供的圖片，修改顯示風險級別的樣式
+        risk_level_zh = "高" if risk_level == "HIGH" else "中等" if risk_level == "MODERATE" else "低"
         st.markdown(f"""
         <div style="text-align: center; margin-bottom: 20px;">
             <h1 style="font-size: 28px; font-weight: bold; margin: 0;">MVI風險預測</h1>
-            <h2 style="font-size: 36px; font-weight: bold; margin: 5px 0; color: {'#F44336' if risk_level == 'HIGH' else '#FFC107' if risk_level == 'MODERATE' else '#4CAF50'};">{risk_level}</h2>
+            <h2 style="font-size: 45px; font-weight: bold; margin: 15px 0; color: {'#F44336' if risk_level == 'HIGH' else '#FFC107' if risk_level == 'MODERATE' else '#4CAF50'};">{risk_level_zh}</h2>
         </div>
         """, unsafe_allow_html=True)
         
         # Add divider before recommendations
         st.markdown("<hr style='margin: 15px 0; border-color: #e6e6e6;'>", unsafe_allow_html=True)
         
-        # Recommended actions with better styling
+        # 建議的動作標題
         st.markdown("""
-        <h3 style="font-size: 20px; margin-bottom: 15px;">Recommended Actions</h3>
+        <h3 style="font-size: 20px; margin-bottom: 15px;">建議措施</h3>
         """, unsafe_allow_html=True)
         
         # List recommended actions with bullet points
@@ -391,23 +345,7 @@ if calc_button:
         # Close the white card div
         st.markdown("</div>", unsafe_allow_html=True)
         
-        # Display the scoring breakdown in expandable section
-        with st.expander("查看評分詳情"):
-            st.markdown(f"**總分:** {total_score}")
-            st.markdown(f"**MVI機率:** {probability}%")
-            
-            details_df = pd.DataFrame({
-                "參數": ["AFP", "PIVKA-II", "腫瘤負荷指數"],
-                "數值": [f"{afp:.1f} ng/mL", f"{pivka_ii:.1f} ng/mL", f"{tumor_burden:.1f}"],
-                "閾值": ["≥20", "≥35", "≥6.4"],
-                "得分": [
-                    "1" if afp >= 20 else "0",
-                    "2" if pivka_ii >= 35 else "0",
-                    "1" if tumor_burden >= 6.4 else "0"
-                ]
-            })
-            
-            st.table(details_df)
+        # 移除評分細節展開區，只在顯眼位置顯示結果
         
         # Save results option
         if patient_id:
