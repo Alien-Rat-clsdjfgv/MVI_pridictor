@@ -6,8 +6,10 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 import json
 
-# Get database URL from environment variable
-DATABASE_URL = os.environ.get('DATABASE_URL', '')
+from dotenv import load_dotenv; load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL")
+SECRET_KEY   = os.getenv("APP_SECRET_KEY")
+
 
 # Create SQLAlchemy engine
 engine = create_engine(DATABASE_URL)

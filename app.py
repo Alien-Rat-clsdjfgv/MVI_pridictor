@@ -4,8 +4,10 @@ import numpy as np
 import plotly.graph_objects as go
 import datetime
 import json
-import os
-
+import os, sqlalchemy as sa
+from dotenv import load_dotenv; load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL")
+SECRET_KEY   = os.getenv("APP_SECRET_KEY")
 # Set page configuration
 st.set_page_config(
     page_title="MVI預測",
