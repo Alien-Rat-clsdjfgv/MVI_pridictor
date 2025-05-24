@@ -36,6 +36,7 @@ class Patient(Base):
     liver_cirrhosis = Column(Boolean, nullable=True)
     hbv_status = Column(Boolean, nullable=True)  # Hepatitis B status
     hcv_status = Column(Boolean, nullable=True)  # Hepatitis C status
+
     
     # Assessment results
     total_score = Column(Integer, nullable=False)
@@ -109,7 +110,8 @@ def save_patient(patient_data):
             liver_cirrhosis=patient_data['parameters'].get('liver_cirrhosis'),
             hbv_status=patient_data['parameters'].get('hbv_status'),
             hcv_status=patient_data['parameters'].get('hcv_status'),
-            
+
+
             # Results
             total_score=patient_data['results']['total_score'],
             probability=patient_data['results']['probability'],

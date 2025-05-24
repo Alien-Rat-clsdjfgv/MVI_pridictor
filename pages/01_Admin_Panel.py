@@ -147,6 +147,13 @@ elif page == "Model Management":
     st.subheader("Current Model")
     
     # Display current coefficients from the model
+
+    import numpy as np
+    betas  = np.abs(mvi_model.model.coef_[0]).round(4)             # [0.4902, 0.3551, 0.3193]
+    params = mvi_model.features                                    # ["afp","pivka_ii","tumor_burden"]
+
+    beta_min = betas[betas > 0].min()
+    points = np.round(betas / beta_min).astype(int)    
     coefficients = mvi_model.get_coefficients()
     
     col1, col2 = st.columns(2)
@@ -155,7 +162,8 @@ elif page == "Model Management":
         st.write("**Model Coefficients:**")
         coef_df = pd.DataFrame({
             "Parameter": list(coefficients.keys()),
-            "Coefficient (β)": list(coefficients.values())
+            "Coefficient (β)": list(coefficients.values()),
+            "Point": points
         })
         st.table(coef_df)
     
@@ -163,14 +171,14 @@ elif page == "Model Management":
         # Create a bar chart of the coefficients
         fig = go.Figure([go.Bar(
             x=list(coefficients.keys()),
-            y=list(coefficients.values()),
+            y=list(points),
             marker_color=['#1f77b4', '#ff7f0e', '#2ca02c']
         )])
         
         fig.update_layout(
-            title="Parameter Importance (β Coefficients)",
+            title="Parameter Importance points)",
             xaxis_title="Parameter",
-            yaxis_title="Coefficient Value",
+            yaxis_title="points",
             height=300
         )
         

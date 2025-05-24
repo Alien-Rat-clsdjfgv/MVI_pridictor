@@ -5,7 +5,21 @@ from sklearn.preprocessing import StandardScaler
 import joblib
 import os
 from database import get_patients_for_training
+FEATURE_COLS = ["afp", "pivka_ii", "tumor_burden"]   # 只用三指標
+POINT_CUTS = [0.30, 0.45, 0.60, 0.75]               # B→point 門檻
+RISK_LEVEL = ("LOW", "MODERATE", "HIGH")            # 風險對照表
 
+def score_from_prob(prob: float):
+    """機率 → (point, risk)；prob 為 0–1"""
+    point = sum(prob >= cut for cut in POINT_CUTS)
+    risk  = RISK_LEVEL[(prob >= .70) + (prob >= .40)]
+    return point, risk
+
+def coefficients_to_points(coefs, feature_names):
+    """|β| / 最小 |β| → 四捨五入成 point 權重"""
+    abs_coef = np.abs(coefs)
+    beta_min = abs_coef.min() or 1e-6        # 防 0
+    return {f: int(round(c/beta_min)) for f, c in zip(feature_names, abs_coef)}
 # Path to save model
 MODEL_DIR = 'models'
 MODEL_PATH = os.path.join(MODEL_DIR, 'mvi_model.pkl')
@@ -20,7 +34,7 @@ class MVIModel:
     def __init__(self):
         self.model = None
         self.scaler = None
-        self.features = ['afp', 'pivka_ii', 'tumor_burden']
+        self.features = FEATURE_COLS.copy()
         self.thresholds = {
             'afp': 20.0,
             'pivka_ii': 35.0,  # Value kept same but unit changed from mAU/mL to ng/mL
@@ -108,36 +122,64 @@ class MVIModel:
         # Train logistic regression model
         self.model = LogisticRegression(random_state=42)
         self.model.fit(X_scaled, y)
-        
-        # Save the model
+        # ---- 讓係數自動轉成 point 權重 ----
+        new_points = coefficients_to_points(self.model.coef_[0], FEATURE_COLS)
+        self.points = new_points
+        # ---------- (A) 重新計算 probability_map ----------
+        # 把訓練資料再跑一次預測
+        probs = self.model.predict_proba(X_scaled)[:, 1]      # 0~1
+        points = [score_from_prob(p)[0] for p in probs]       # 0~4
+
+        import numpy as np
+        prob_map = []
+        for i in range(len(POINT_CUTS)+1):                    # 0~4
+            bucket = np.array(probs)[np.array(points) == i]
+            prob_map.append(round(bucket.mean()*100, 1) if bucket.size else None)
+
+        # 若有空桶，用舊值或線性內插補上
+        default_map = [30.8, 46.6, 63.1, 77.0, 86.7]
+        prob_map = [p if p is not None else default_map[i] for i, p in enumerate(prob_map)]
+        self.probability_map = {i:p for i,p in enumerate(prob_map)}
+        # 順手存檔，方便前端或下次重啟載入
+        import json
+        with open("probability_map.json", "w") as f:
+            json.dump(prob_map, f, indent=2)
+                # Save the model
         self.save_model()
         return True
-    
-    def predict_probability(self, afp, pivka_ii, tumor_burden):
-        """Predict MVI probability using the model if available"""
-        if self.model is not None and self.scaler is not None:
-            X = np.array([[afp, pivka_ii, tumor_burden]])
-            X_scaled = self.scaler.transform(X)
-            return float(self.model.predict_proba(X_scaled)[0, 1] * 100)
         
-        # Fall back to scoring system if no model available
-        return self.calculate_probability_from_score(
-            self.calculate_score(afp, pivka_ii, tumor_burden)
-        )
+    
+    def predict_probability(self, afp, pivka_ii, tumor_burden,
+                            extra_clinical_score=0):
+        """
+        輸入三指標 → 回傳 (B %, point, total_score, risk_level)
+        """
+        # ---------- 1. Logistic 機率 ----------
+        if self.model and self.scaler:
+            X_scaled = self.scaler.transform([[afp, pivka_ii, tumor_burden]])
+            prob = float(self.model.predict_proba(X_scaled)[0, 1])  # 0~1
+        else:
+            # 沒訓練時仍用舊計分表 fallback
+            prob = self.calculate_probability_from_score(
+                       self.calculate_score(afp, pivka_ii, tumor_burden)) / 100
+
+        # ---------- 2. 機率 → point / risk ----------
+        point, risk = score_from_prob(prob)
+
+        # ---------- 3. total_score ----------
+        total_score = point + extra_clinical_score
+
+        return round(prob*100, 1), point, total_score, risk
+
     
     def calculate_score(self, afp, pivka_ii, tumor_burden):
-        """Calculate traditional score based on thresholds"""
         score = 0
-        
         if afp >= self.thresholds['afp']:
             score += self.points['afp']
-        
         if pivka_ii >= self.thresholds['pivka_ii']:
             score += self.points['pivka_ii']
-        
         if tumor_burden >= self.thresholds['tumor_burden']:
             score += self.points['tumor_burden']
-        
         return score
     
     def calculate_probability_from_score(self, score):

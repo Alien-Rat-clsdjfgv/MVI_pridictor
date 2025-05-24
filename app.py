@@ -6,6 +6,7 @@ import datetime
 import json
 import os, sqlalchemy as sa
 from dotenv import load_dotenv; load_dotenv()
+from model import mvi_model 
 DATABASE_URL = os.getenv("DATABASE_URL")
 SECRET_KEY   = os.getenv("APP_SECRET_KEY")
 # Set page configuration
@@ -374,35 +375,47 @@ with admin_expander:
     st.markdown("[開啟管理面板](/Admin_Panel)")
     st.caption("需要身份驗證")
 
-# Display the reference table
-with st.expander("查看評分參考表"):
-    # 使用原始係數
-    model_coefficients = {
-        'afp': 0.647,
-        'pivka_ii': 1.206,
-        'tumor_burden': 0.916
-    }
-    
-    # Create a DataFrame for the reference table
-    ref_data = {
-        "預測變量": ["AFP", "AFP", "PIVKA-II", "PIVKA-II", "腫瘤負荷指數", "腫瘤負荷指數"],
-        "回歸係數 (β)": [
-            model_coefficients['afp'], model_coefficients['afp'], 
-            model_coefficients['pivka_ii'], model_coefficients['pivka_ii'], 
-            model_coefficients['tumor_burden'], model_coefficients['tumor_burden']
-        ],
-        "分類": ["<20", "≥20", "<35", "≥35", "<6.4", "≥6.4"],
-        "分數": [0, 1, 0, 2, 0, 1]
-    }
-    
-    ref_df = pd.DataFrame(ref_data)
-    st.table(ref_df)
-    
-    # Create a DataFrame for the probability table
-    prob_data = {
-        "總分數": [0, 1, 2, 3, 4],
-        "MVI機率": ["30.8%", "46.6%", "63.1%", "77.0%", "86.7%"]
-    }
-    
-    prob_df = pd.DataFrame(prob_data)
+
+
+with st.expander("查看評分參考表", expanded=True):
+    import numpy as np
+
+    # 1. 取最新 β 係數
+    beta_arr = np.abs(mvi_model.model.coef_[0]).round(4)
+    features = mvi_model.features
+
+    # 2. 計算 point 權重
+    beta_min = float(beta_arr[beta_arr>0].min())
+    point_arr = np.round(beta_arr / beta_min).astype(int)
+
+    # 3. 組動態 DataFrame
+    rows = []
+    cuts = {"afp":20, "pivka_ii":35, "tumor_burden":6.4}
+    names = {"afp":"AFP", "pivka_ii":"PIVKA-II", "tumor_burden":"腫瘤負荷指數"}
+
+    for idx, var in enumerate(features):
+        cname = names[var]
+        cut = cuts[var]
+        beta = beta_arr[idx]
+        pt   = point_arr[idx]
+        rows += [
+            [cname, beta, f"<{cut}", 0],
+            [cname, beta, f"≥{cut}", pt]
+        ]
+
+    ref_df = pd.DataFrame(rows,
+        columns=["預測變量","回歸係數 (β)","分類","分數"])
+    st.dataframe(ref_df, use_container_width=True)
+
+    # 4. 動態機率表
+    if os.path.exists("probability_map.json"):
+        with open("probability_map.json", "r") as f:
+            prob_map = json.load(f)
+    else:
+        prob_map = [30.8, 46.6, 63.1, 77.0, 86.7]  # fallback
+
+    prob_df = pd.DataFrame({
+        "總分數": list(range(len(prob_map))),
+        "MVI機率": [f"{p:.1f}%" for p in prob_map]
+    })
     st.table(prob_df)
