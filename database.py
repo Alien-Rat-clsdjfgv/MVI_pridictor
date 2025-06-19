@@ -5,8 +5,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 import json
-
-from dotenv import load_dotenv; load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 SECRET_KEY   = os.getenv("APP_SECRET_KEY")
 
