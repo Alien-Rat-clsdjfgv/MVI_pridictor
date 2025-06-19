@@ -5,7 +5,6 @@ import plotly.graph_objects as go
 import datetime
 import json
 import os, sqlalchemy as sa
-from dotenv import load_dotenv; load_dotenv()
 from model import mvi_model 
 DATABASE_URL = os.getenv("DATABASE_URL")
 SECRET_KEY   = os.getenv("APP_SECRET_KEY")
