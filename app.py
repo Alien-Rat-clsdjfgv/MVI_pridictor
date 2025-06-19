@@ -278,7 +278,7 @@ with col_input:
         )
     
     tumor_burden = st.number_input(
-        "腫瘤負荷指數",
+        "Tumor Burden Score(TBS)",
         min_value=0.0,
         max_value=100.0,
         value=5.0,
@@ -390,7 +390,7 @@ with st.expander("查看評分參考表", expanded=True):
     # 3. 組動態 DataFrame
     rows = []
     cuts = {"afp":20, "pivka_ii":35, "tumor_burden":6.4}
-    names = {"afp":"AFP", "pivka_ii":"PIVKA-II", "tumor_burden":"腫瘤負荷指數"}
+    names = {"afp":"AFP", "pivka_ii":"PIVKA-II", "tumor_burden":"TBS"}
 
     for idx, var in enumerate(features):
         cname = names[var]
