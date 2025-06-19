@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import roc_curve
 import joblib
 import os
 from database import get_patients_for_training
@@ -20,6 +20,11 @@ def coefficients_to_points(coefs, feature_names):
     abs_coef = np.abs(coefs)
     beta_min = abs_coef.min() or 1e-6        # 防 0
     return {f: int(round(c/beta_min)) for f, c in zip(feature_names, abs_coef)}
+def find_cutpoint(x, y):
+    """用 Youden’s J 找出最佳 threshold"""
+    fpr, tpr, thresh = roc_curve(y, x)
+    J = tpr - fpr
+    return thresh[J.argmax()]
 # Path to save model
 MODEL_DIR = 'models'
 MODEL_PATH = os.path.join(MODEL_DIR, 'mvi_model.pkl')
@@ -103,48 +108,52 @@ class MVIModel:
         return self.default_coefficients
     
     def train(self, df=None):
-        """Train model on patient data"""
+        """Train model on patient data, use Youden’s J 二值化"""
         if df is None:
-            # Try to get data from database
             df = get_patients_for_training()
-            
         if df is None or len(df) < 10:
-            # Not enough data for training, using default coefficients
             return False
-        
-        X = df[self.features]
+
+        # 1. 找每個特徵最佳 cut-point
+        cuts = {feat: find_cutpoint(df[feat], df['actual_mvi']) for feat in self.features}
+
+        # 2. 依 cut-point 將每個特徵二元化
+        for feat, th in cuts.items():
+            df[f'{feat}_bin'] = (df[feat] >= th).astype(int)
+
+        X_bin = df[[f'{feat}_bin' for feat in self.features]]
         y = df['actual_mvi']
-        
-        # Scale features
-        self.scaler = StandardScaler()
-        X_scaled = self.scaler.fit_transform(X)
-        
-        # Train logistic regression model
+
+        # 3. 訓練 Logistic Regression
         self.model = LogisticRegression(random_state=42)
-        self.model.fit(X_scaled, y)
-        # ---- 讓係數自動轉成 point 權重 ----
-        new_points = coefficients_to_points(self.model.coef_[0], FEATURE_COLS)
+        self.model.fit(X_bin, y)
+
+        # 4. 讓係數自動轉成 point 權重
+        new_points = coefficients_to_points(self.model.coef_[0], self.features)
         self.points = new_points
-        # ---------- (A) 重新計算 probability_map ----------
-        # 把訓練資料再跑一次預測
-        probs = self.model.predict_proba(X_scaled)[:, 1]      # 0~1
-        points = [score_from_prob(p)[0] for p in probs]       # 0~4
+
+        # 5. 重新計算 probability_map
+        probs = self.model.predict_proba(X_bin)[:, 1]
+        points = [score_from_prob(p)[0] for p in probs]
 
         import numpy as np
         prob_map = []
-        for i in range(len(POINT_CUTS)+1):                    # 0~4
+        for i in range(len(POINT_CUTS)+1):  # 0~4
             bucket = np.array(probs)[np.array(points) == i]
             prob_map.append(round(bucket.mean()*100, 1) if bucket.size else None)
 
         # 若有空桶，用舊值或線性內插補上
         default_map = [30.8, 46.6, 63.1, 77.0, 86.7]
         prob_map = [p if p is not None else default_map[i] for i, p in enumerate(prob_map)]
-        self.probability_map = {i:p for i,p in enumerate(prob_map)}
-        # 順手存檔，方便前端或下次重啟載入
+        self.probability_map = {i: p for i, p in enumerate(prob_map)}
+
+        # 儲存 probability_map
         import json
         with open("probability_map.json", "w") as f:
             json.dump(prob_map, f, indent=2)
-                # Save the model
+
+        # 儲存模型
+        self.scaler = None  # 二元化不需 scaler
         self.save_model()
         return True
         
